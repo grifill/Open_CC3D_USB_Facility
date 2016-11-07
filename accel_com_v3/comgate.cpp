@@ -379,8 +379,11 @@ void ComGate::parseData()
             memmove(rxbuf, rxbuf+a+4+sizeof(accdata), rxptr-a-4-sizeof(accdata));
             rxptr -= a+4+sizeof(accdata);
             a = -1;
+
         }
     }
+    // Конвертация данных
+    accdata.temp = accdata.temp/340 + 36;
 }
 //------------------------------------------------------------------------------
 void ComGate::getData(AccPack* data)

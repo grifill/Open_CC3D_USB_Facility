@@ -4,6 +4,7 @@
 #include <QGLWidget>
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include <QWheelEvent>
 #include <QTimer>
 
 class GLWidget : public QGLWidget
@@ -24,6 +25,7 @@ protected:
     void mousePressEvent(QMouseEvent *e);
     void mouseMoveEvent(QMouseEvent *e);
     void keyPressEvent(QKeyEvent *e);
+    void wheelEvent(QWheelEvent* e);
 
 signals:
     
@@ -44,6 +46,7 @@ private:
     double ax, ay, az;
 
     void drawCube();
+    void drawPlate();
 };
 
 #endif // GLWIDGET_H
