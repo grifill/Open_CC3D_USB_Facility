@@ -2,7 +2,7 @@
 
 "C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.3\arm\bin\armstlink2.dll" 
 
-"D:\work\workspace_EWW\fp_cc3d_facility_eww\Project\Debug\Exe\fp_cc3d_facility_eww.out" 
+"C:\_progs\git\grifill\Open_CC3D_USB_Facility\fp_cc3d_facility_eww\Project\startup_stm32f10x_md.s" 
 
 --plugin "C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.3\arm\bin\armbat.dll" 
 

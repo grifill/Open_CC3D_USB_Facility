@@ -25,7 +25,7 @@ if not "%~1" == "" goto debugFile
 
 @echo on 
 
-"C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.3\common\bin\cspybat" -f "D:\work\workspace_EWW\fp_cc3d_facility_eww\Project\settings\fp_cc3d_facility_eww.Debug.general.xcl" --backend -f "D:\work\workspace_EWW\fp_cc3d_facility_eww\Project\settings\fp_cc3d_facility_eww.Debug.driver.xcl" 
+"C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.3\common\bin\cspybat" -f "C:\_progs\git\grifill\Open_CC3D_USB_Facility\fp_cc3d_facility_eww\Project\settings\fp_cc3d_facility_eww.Debug.general.xcl" --backend -f "C:\_progs\git\grifill\Open_CC3D_USB_Facility\fp_cc3d_facility_eww\Project\settings\fp_cc3d_facility_eww.Debug.driver.xcl" 
 
 @echo off 
 goto end 
@@ -34,7 +34,7 @@ goto end
 
 @echo on 
 
-"C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.3\common\bin\cspybat" -f "D:\work\workspace_EWW\fp_cc3d_facility_eww\Project\settings\fp_cc3d_facility_eww.Debug.general.xcl" "--debug_file=%~1" --backend -f "D:\work\workspace_EWW\fp_cc3d_facility_eww\Project\settings\fp_cc3d_facility_eww.Debug.driver.xcl" 
+"C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.3\common\bin\cspybat" -f "C:\_progs\git\grifill\Open_CC3D_USB_Facility\fp_cc3d_facility_eww\Project\settings\fp_cc3d_facility_eww.Debug.general.xcl" "--debug_file=%~1" --backend -f "C:\_progs\git\grifill\Open_CC3D_USB_Facility\fp_cc3d_facility_eww\Project\settings\fp_cc3d_facility_eww.Debug.driver.xcl" 
 
 @echo off 
 :end
