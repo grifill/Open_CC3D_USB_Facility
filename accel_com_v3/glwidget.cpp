@@ -12,7 +12,7 @@ GLWidget::GLWidget(QWidget *parent) :
 {
     cx = -5;
     cy = -5;
-    cz = 10;
+    cz = 20;
     cp = 30;
     cr = -60;
 
@@ -31,7 +31,7 @@ void GLWidget::initializeGL()
 
     // Освещение
     GLfloat amb[] = {0.2, 0.2, 0.2, 1};
-    GLfloat diff[] = {0.6, 0.6, 0.6, 1};
+    GLfloat diff[] = {0.4, 0.4, 0.4, 1};
     GLfloat spec[] = {0, 0, 0, 0};
     GLfloat pos[] = {1, 1, 1, 0};
     glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
@@ -60,7 +60,7 @@ void GLWidget::paintGL()
 //    gluPerspective(60, aspect, 1, 500);
     glFrustum(-aspect, aspect, -1, 1, 1.5, 500);
 
-    glTranslatef(0, 0, -10);
+    glTranslatef(0, 0, -cz);
 
     glRotatef(cr, 1, 0, 0);
     glRotatef(cp, 0, 0, 1);
@@ -112,13 +112,11 @@ void GLWidget::paintGL()
 
     glEnable(GL_LIGHTING);
 
-    // Плата
+    // Поворот платы
     glRotatef(pp, 0, 1, 0);
     glRotatef(pr, -1, 0, 0);
-    glScalef(3, 2, 0.1);
-    glColor3f(0.1, 0.7, 0.1);
-    drawCube();
-
+    // Плата
+    drawPlate();
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *e)
@@ -169,6 +167,12 @@ void GLWidget::keyPressEvent(QKeyEvent *e)
     }
 }
 
+void GLWidget::wheelEvent(QWheelEvent *e)
+{
+    float step = e->delta();
+    cz -= 0.01*step;
+}
+
 void GLWidget::drawCube()
 {
     GLfloat n[6][3] = {{0, 0, -1}, {0, 1, 0}, {0, 0, 1}, {0, -1, 0},
@@ -209,4 +213,77 @@ void GLWidget::setAccels(double x, double y, double z)
     ax = x;
     ay = y;
     az = z;
+}
+
+void GLWidget::drawPlate()
+{
+    // Сама плата
+    glPushMatrix();
+    glScalef(5, 5, 0.2);
+    glColor3f(0.8, 0.8, 0.8);
+    drawCube();
+    glPopMatrix();
+
+    // Разъем USB
+    glPushMatrix();
+    glTranslated(0, -4, -0.5);
+    glScaled(1, 1, 0.3);
+    glColor3f(0.9, 0.9, 0.9);
+    drawCube();
+    glPopMatrix();
+
+    // Процессор
+    glPushMatrix();
+    glTranslated(0.1, -0.5, 0.3);
+    glScaled(1, 1, 0.1);
+    glColor3f(0.1, 0.1, 0.1);
+    drawCube();
+    glPopMatrix();
+
+    // Микруха ближе к разъему
+    glPushMatrix();
+    glTranslated(0, -3, 0.3);
+    glScaled(0.6, 0.75, 0.1);
+    glColor3f(0.1, 0.1, 0.1);
+    drawCube();
+    glPopMatrix();
+
+    // Микруха дальше от разъема
+    glPushMatrix();
+    glTranslated(0.3, 3.5, 0.3);
+    glScaled(0.6, 0.6, 0.1);
+    glColor3f(0.1, 0.1, 0.1);
+    drawCube();
+    glPopMatrix();
+
+    const float gridStep_x = 0.31;    // Шаг рейки разъемов
+    const float gridStep_y = 0.35;    // Шаг рейки разъемов
+    const float gridX = 3.5;        // Центр сетки
+    const float gridY = 1;
+
+    // Подложка контактной рейки
+    glPushMatrix();
+    glTranslated(gridX, gridY, 0.3);
+    glScaled(3*gridStep_x, 6*gridStep_y, 0.15);
+    glColor3f(0.1, 0.1, 0.1);
+    drawCube();
+    glPopMatrix();
+
+    glLineWidth(5);
+    glColor3f(0.9, 0.9, 0.2);
+    // Контактная рейка
+    for(int x=0 ; x<3; x++)
+    {
+        for(int y=0; y<6; y++)
+        {
+            glPushMatrix();
+            glTranslated(gridX + 2*gridStep_x*((float)x - 1),
+                         gridY + 2*gridStep_y*((float)y - 2.5),
+                         1
+                        );
+            glScaled(0.07, 0.07, 1);
+            drawCube();
+            glPopMatrix();
+        }
+    }
 }

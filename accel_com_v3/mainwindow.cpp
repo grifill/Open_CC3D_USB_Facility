@@ -158,7 +158,7 @@ void MainWindow::onPokeTimer()
     {
         pitch = asin((double)data.ax/normx)*180.0/M_PI;
         if(data.az < 0)
-            pitch = -pitch;
+            pitch = 180-pitch;
     }
     if(normy == 0)
     {
@@ -168,7 +168,7 @@ void MainWindow::onPokeTimer()
     {
         roll = asin((double)data.ay/normy)*180.0/M_PI;
         if(data.az < 0)
-            roll = -roll;
+            roll = 180-roll;
     }
     ui->pitch_sb->setValue(pitch);
     ui->roll_sb->setValue(roll);
