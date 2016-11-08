@@ -61,7 +61,7 @@ int main()
 	SPI_Mems_Init();
         
         // MPU6000 Settings
-	MPU6000_INIT(PLL_Z_Gyro,HZ_260,AFS_16,FS_1000);
+	MPU6000_INIT(PLL_Z_Gyro,HZ_21,AFS_16,FS_1000);
         for(int i=0; i<9000000; i++);// delay init usb layer
 
 	init_cc3d_tim2();

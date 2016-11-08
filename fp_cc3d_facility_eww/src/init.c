@@ -35,11 +35,11 @@ void init_cc3d_led()
 void init_cc3d_tim2()
 {
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2,ENABLE);
-
+       
 	TIM_TimeBaseInitTypeDef base_timer_2;
 	TIM_TimeBaseStructInit(&base_timer_2);
 	base_timer_2.TIM_Prescaler = 3600-1;
-	base_timer_2.TIM_Period = 100-1; // 200Hz
+	base_timer_2.TIM_Period = 500; // 72000000/(3600*500)=40 (Hz)
 	base_timer_2.TIM_CounterMode = TIM_CounterMode_Up  ;
 	TIM_TimeBaseInit(TIM2, &base_timer_2);
 

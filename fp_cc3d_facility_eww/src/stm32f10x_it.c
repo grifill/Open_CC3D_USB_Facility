@@ -168,25 +168,22 @@ void TIM2_IRQHandler ()
 		break;
 	default:
 		LED_BLUE_TRIGG();
-		//MPU6000_WHO_AM_I_Get(&data_mpu_who);
-		MPU6000_GetTempRaw(&data_mpu_temp);
-		MPU6000_GetAccAxesRaw(&data_mpu_acc);
-                MPU6000_GetGyroAxesRaw(&data_mpu_gyro);
-		//--------------------------------------------
-		//who=data_mpu_who.WHO_MPU;
-		//temp=(data_mpu_temp.Temp_MPU/340)+36;
 		//--------------------------------------------
 		buf_tx[0]=0xEF;
 		buf_tx[1]=0xBE;
                 buf_tx[2]=0xAD;
 		buf_tx[3]=0xDE;
+                MPU6000_GetAccAxesRaw(&data_mpu_acc);
                 memmove(buf_tx+4,&data_mpu_acc.AXIS_AX,2);
                 memmove(buf_tx+6,&data_mpu_acc.AXIS_AY,2);
                 memmove(buf_tx+8,&data_mpu_acc.AXIS_AZ,2);
+                MPU6000_GetGyroAxesRaw(&data_mpu_gyro);
                 memmove(buf_tx+10,&data_mpu_gyro.AXIS_GX,2);
-                memmove(buf_tx+12,&data_mpu_gyro.AXIS_GX,2);
-                memmove(buf_tx+14,&data_mpu_gyro.AXIS_GX,2);
-                memmove(buf_tx+16,&data_mpu_temp.Temp_MPU,2);
+                memmove(buf_tx+12,&data_mpu_gyro.AXIS_GY,2);
+                memmove(buf_tx+14,&data_mpu_gyro.AXIS_GZ,2);
+                MPU6000_GetTempRaw(&data_mpu_temp);
+                temp=(data_mpu_temp.Temp_MPU/340)+36;
+                memmove(buf_tx+16,&temp,2);
 		//------ÂÛÂÎÄ-------------------------------------
                 USB_Send_Data(buf_tx,18);
 		break;
