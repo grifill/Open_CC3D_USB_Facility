@@ -70,6 +70,7 @@ private slots:
     void on_com_button_clicked();
     void on_net_button_clicked();
     void on_about_action_triggered();
+    void on_refreshPorts_button_clicked();
 };
 
 #endif // MAINWINDOW_H

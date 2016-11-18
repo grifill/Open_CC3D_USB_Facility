@@ -27,69 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(&srv, SIGNAL(newConnection()), SLOT(onNewConnection()));
     connect(&ptsrv, SIGNAL(newConnection()), SLOT(onNewPtConnection()));
 
-    #ifdef WIN32
-    for(int a=0; a<100; a++)
-    {
-        char portname[8];
-        sprintf(portname, "COM%d",a+1);
-        char devname[1024];
-        int err = QueryDosDeviceA(portname, devname, 1024);
-        if(err == 0)
-        {
-            int e = GetLastError();
-            if(e == ERROR_FILE_NOT_FOUND)
-                continue;
-            LPVOID lpMsgBuf;
-            FormatMessage(
-                FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                FORMAT_MESSAGE_FROM_SYSTEM |
-                FORMAT_MESSAGE_IGNORE_INSERTS,
-                NULL,
-                e,
-                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                (LPTSTR) &lpMsgBuf,
-                0, NULL );
-            QMessageBox::warning(this, QString("Error"), QString("Unable to QueryDosDevice: (")
-                                                         + QString::number(e) + ") "
-                                                         + QString::fromWCharArray((wchar_t*)lpMsgBuf) );
-            LocalFree(lpMsgBuf);
-        }
-        else
-        {
-            ui->com_combo->addItem(QString("\\\\.\\COM")+QString::number(a+1));
-            int i = 0;
-            QString s;
-            while(i<err)
-            {
-                char c = devname[i];
-                if(c == 0)
-                {
-                    qDebug() << s;
-//                    ui->com_combo->addItem(s);
-                    s = "";
-                    i++;
-                    if(devname[i] == 0)
-                        break;
-                    continue;
-                }
-                s.append(c);
-                i++;
-            }
-        }
-    }
-    #else
-    QDir d("/dev/");
-    QStringList nf;
-    nf << "ttyS*" << "ttyUSB*" << "ttyACM*";
-    QStringList files = d.entryList(
-        nf,
-        QDir::Files | QDir::NoDotAndDotDot | QDir::System,
-        QDir::Name);
-    for(int a=0; a<files.size(); a++)
-    {
-        ui->com_combo->addItem(QString("/dev/") + files[a]);
-    }
-    #endif
+    on_refreshPorts_button_clicked();
 
     ui->widget->setAccels(ui->x_sb->value(), ui->y_sb->value(), ui->z_sb->value());
     ui->widget->setPlateRotations(ui->pitch_sb->value(), ui->roll_sb->value());
@@ -403,4 +341,72 @@ void MainWindow::onPtDataReady()
 void MainWindow::on_about_action_triggered()
 {
     about.show();
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_refreshPorts_button_clicked()
+{
+    ui->com_combo->clear();
+    #ifdef WIN32
+    for(int a=0; a<100; a++)
+    {
+        char portname[8];
+        sprintf(portname, "COM%d",a+1);
+        char devname[1024];
+        int err = QueryDosDeviceA(portname, devname, 1024);
+        if(err == 0)
+        {
+            int e = GetLastError();
+            if(e == ERROR_FILE_NOT_FOUND)
+                continue;
+            LPVOID lpMsgBuf;
+            FormatMessage(
+                FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                FORMAT_MESSAGE_FROM_SYSTEM |
+                FORMAT_MESSAGE_IGNORE_INSERTS,
+                NULL,
+                e,
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                (LPTSTR) &lpMsgBuf,
+                0, NULL );
+            QMessageBox::warning(this, QString("Error"), QString("Unable to QueryDosDevice: (")
+                                                         + QString::number(e) + ") "
+                                                         + QString::fromWCharArray((wchar_t*)lpMsgBuf) );
+            LocalFree(lpMsgBuf);
+        }
+        else
+        {
+            ui->com_combo->addItem(QString("\\\\.\\COM")+QString::number(a+1));
+            int i = 0;
+            QString s;
+            while(i<err)
+            {
+                char c = devname[i];
+                if(c == 0)
+                {
+                    qDebug() << s;
+//                    ui->com_combo->addItem(s);
+                    s = "";
+                    i++;
+                    if(devname[i] == 0)
+                        break;
+                    continue;
+                }
+                s.append(c);
+                i++;
+            }
+        }
+    }
+    #else
+    QDir d("/dev/");
+    QStringList nf;
+    nf << "ttyS*" << "ttyUSB*" << "ttyACM*";
+    QStringList files = d.entryList(
+        nf,
+        QDir::Files | QDir::NoDotAndDotDot | QDir::System,
+        QDir::Name);
+    for(int a=0; a<files.size(); a++)
+    {
+        ui->com_combo->addItem(QString("/dev/") + files[a]);
+    }
+    #endif
 }
