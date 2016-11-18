@@ -1,5 +1,7 @@
 #include "comgate.h"
 
+#define VERBOSE 0
+
 #ifndef WIN32
 #include <termios.h>
 #include <unistd.h>
@@ -98,7 +100,7 @@ ComGate::~ComGate()
     disconnectFromDevice();
 }
 //------------------------------------------------------------------------------
-int ComGate::connectToDevice(const char *device, int speed, int stopbits, int parity)
+int ComGate::connectToDevice(const char *device, int speed, int stopbits, CG_PARITY parity)
 {
     #ifdef WIN32
     // Преобразование в вендостроку
@@ -233,11 +235,24 @@ int ComGate::connectToDevice(const char *device, int speed, int stopbits, int pa
     options.c_cflag |= CS8;
     if(stopbits == 2)
         options.c_cflag |= CSTOPB;
-    if(parity != P_NONE)
+    switch(parity)
     {
+    case P_ODD:
+        options.c_cflag |= PARODD;
+    case P_EVEN:
         options.c_cflag |= PARENB;
-        if(parity == P_ODD)
-            options.c_cflag |= PARODD;
+        break;
+
+    case P_MARK:
+        options.c_cflag |= PARODD;
+    case P_SPACE:
+        options.c_cflag |= CMSPAR;
+        options.c_cflag |= PARENB;
+        break;
+
+    case P_NONE:
+    default:
+        break;
     }
 //    /*options.c_cflag &= ~CSIZE;*/
 //    options.c_iflag &= ~ISTRIP;
@@ -307,7 +322,9 @@ char* ComGate::hexdump(const char *ar, int arsize)
 //------------------------------------------------------------------------------
 int ComGate::readPendingData()
 {
+#if VERBOSE > 1
     char log[ERR_SIZE];
+#endif
 
     if(rxptr >= RXBUF_SIZE)
     {
@@ -349,9 +366,10 @@ int ComGate::readPendingData()
 
         // Разбираем то что прочитали
         parseData();
-
-//        snprintf(log, ERR_SIZE, "Dump received: <- %s", hexdump(arp, res));
-//        emit newDump(QString(log));
+#if VERBOSE > 1
+        snprintf(log, ERR_SIZE, "Dump received: <- %s", hexdump(arp, res));
+        emit newDump(QString(log));
+#endif
 //    }
     if(measure.elapsed() > 500)
     {
@@ -364,17 +382,21 @@ int ComGate::readPendingData()
 //------------------------------------------------------------------------------
 void ComGate::parseData()
 {
+#if VERBOSE > 0
     char log[ERR_SIZE];
+#endif
     for(int a=0; a<rxptr-4-(int)sizeof(accdata); a++)
     {
         unsigned int* m = (unsigned int*)&(rxbuf[a]);
         if(*m == 0xDEADBEEF)
         {
             // Нашли начало пакета
+#if VERBOSE > 0
             snprintf(log, ERR_SIZE,
-                     "Package received: %s",
+                     "Packet received: %s",
                      hexdump(rxbuf+a, 4+sizeof(accdata)));
             emit newDump(QString(log));
+#endif
             memcpy(&accdata, rxbuf+a+4, sizeof(accdata));
             memmove(rxbuf, rxbuf+a+4+sizeof(accdata), rxptr-a-4-sizeof(accdata));
             rxptr -= a+4+sizeof(accdata);
@@ -382,8 +404,6 @@ void ComGate::parseData()
 
         }
     }
-    // Конвертация данных
-    //accdata.temp = accdata.temp/340 + 36;
 }
 //------------------------------------------------------------------------------
 void ComGate::getData(AccPack* data)

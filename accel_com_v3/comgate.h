@@ -3,6 +3,17 @@
 
 #ifdef WIN32
 #include <windows.h>
+#else
+#define UCHAR unsigned char
+// Тип четности
+enum CG_PARITY
+{
+    P_NONE,     // Отутствует
+    P_EVEN,     // Дополнение до четности
+    P_ODD,      // Дополнение до нечетности
+    P_MARK,     // Бит четности всегда 1
+    P_SPACE     // Бит четности всегда 0
+};
 #endif
 #include <stdio.h>
 #include <QObject>
@@ -54,7 +65,7 @@ public:
     int connectToDevice(const char* device = "/dev/ttyACM0",
                         int speed = 115200,
                         int stopbits = 1,
-                        int parity = P_NONE );
+                        CG_PARITY parity = P_NONE );
     #endif
     // Отключение от устройства
     void disconnectFromDevice();
