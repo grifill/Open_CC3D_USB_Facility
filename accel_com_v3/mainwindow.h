@@ -54,6 +54,11 @@ private:
     int64_t lastSent;
     QTime measure;
 
+    QTime calibTime;
+    bool bZeroCalibration;
+    Rotation gyroDrift;
+    bool bCoeffCalibration;
+
     // Закрывает сервер и отключает всех клиентов
     void closeServer();
 
@@ -71,6 +76,9 @@ private slots:
     void on_net_button_clicked();
     void on_about_action_triggered();
     void on_refreshPorts_button_clicked();
+    void on_resetRotation_button_clicked();
+    void on_calibrateZero_action_triggered();
+    void on_calibrateAngle_action_triggered();
 };
 
 #endif // MAINWINDOW_H

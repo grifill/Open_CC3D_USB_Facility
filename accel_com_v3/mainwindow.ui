@@ -67,6 +67,9 @@
            </property>
           </widget>
          </item>
+         <item row="3" column="0" colspan="5">
+          <widget class="QTextEdit" name="log_edit"/>
+         </item>
          <item row="2" column="0">
           <widget class="QLabel" name="label_2">
            <property name="text">
@@ -84,16 +87,6 @@
            </property>
           </widget>
          </item>
-         <item row="3" column="0" colspan="5">
-          <widget class="QTextEdit" name="log_edit"/>
-         </item>
-         <item row="1" column="2" colspan="3">
-          <widget class="QLabel" name="comSpeed_label">
-           <property name="text">
-            <string>0 Б/с</string>
-           </property>
-          </widget>
-         </item>
          <item row="0" column="1">
           <widget class="QToolButton" name="refreshPorts_button">
            <property name="text">
@@ -105,6 +98,20 @@
           <widget class="QLabel" name="label_3">
            <property name="text">
             <string>Поток данных:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2" colspan="2">
+          <widget class="QLabel" name="comSpeed_label">
+           <property name="text">
+            <string>0 Б/с</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="4">
+          <widget class="QPushButton" name="resetRotation_button">
+           <property name="text">
+            <string>Сброс вращения</string>
            </property>
           </widget>
          </item>
@@ -405,7 +412,7 @@
      <x>0</x>
      <y>0</y>
      <width>941</width>
-     <height>26</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -414,6 +421,14 @@
     </property>
     <addaction name="about_action"/>
    </widget>
+   <widget class="QMenu" name="menu_2">
+    <property name="title">
+     <string>Гироскоп</string>
+    </property>
+    <addaction name="calibrateZero_action"/>
+    <addaction name="calibrateAngle_action"/>
+   </widget>
+   <addaction name="menu_2"/>
    <addaction name="menu"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
@@ -428,6 +443,19 @@
   <action name="about_action">
    <property name="text">
     <string>О программе</string>
+   </property>
+  </action>
+  <action name="calibrateZero_action">
+   <property name="text">
+    <string>Калибровка нуля</string>
+   </property>
+   <property name="toolTip">
+    <string>Калибровка нуля</string>
+   </property>
+  </action>
+  <action name="calibrateAngle_action">
+   <property name="text">
+    <string>Калибровка угла</string>
    </property>
   </action>
  </widget>

@@ -12,6 +12,7 @@ MainWindow::MainWindow(QWidget *parent) :
     about(NULL)
 {
     ui->setupUi(this);
+    bZeroCalibration = false;
     ui->refreshPorts_button->setIcon(style()->standardIcon(QStyle::SP_BrowserReload));
     about.setAppName("РК 2.2 | ДГИ");
     measure.start();
@@ -52,21 +53,24 @@ void MainWindow::onPokeTimer()
     t1.start();
 
     AccPack data;
+    Rotation rot;
     memset(&data, 0, sizeof(data));
+    memset(&rot, 0, sizeof(rot));
     if(cg.isConnected())
     {
         cg.readPendingData();
         ui->comSpeed_label->setText(QString::number(cg.getSpeed())
                                     + QString::fromUtf8(" Б/с"));
         cg.getData(&data);
+        cg.getRotation(&rot);
 
         ui->x_sb->setValue(data.ax);
         ui->y_sb->setValue(data.ay);
         ui->z_sb->setValue(data.az);
         ui->gx_sb->setValue(data.gx);
         ui->gy_sb->setValue(data.gy);
-        ui->gz_sb->setValue(data.gy);
-        ui->T_sb->setValue(data.temp);
+        ui->gz_sb->setValue(data.gz);
+        ui->T_sb->setValue((float)data.temp/256);
     }
     else
     {
@@ -111,7 +115,37 @@ void MainWindow::onPokeTimer()
     ui->pitch_sb->setValue(pitch);
     ui->roll_sb->setValue(roll);
 
-    ui->widget->setPlateRotations(pitch, roll);
+    //ui->widget->setPlateRotations(pitch, roll);
+    ui->widget->setPlateRotations(-rot.ry, rot.rx, rot.rz);
+
+    // Проверяем состояние калибровки
+    if(bCoeffCalibration)
+    {
+        if(calibTime.elapsed() > 5000)
+        {
+            float k = cg.getAngleMeasure();
+            cg.setGyroCalibration(k);
+            QMessageBox::information(
+                this,
+                QString::fromUtf8("Калибровка гироскопа"),
+                QString::fromUtf8("Калибровка угла завершена"));
+            bCoeffCalibration = false;
+        }
+    }
+    if(bZeroCalibration)
+    {
+        if(calibTime.elapsed() > 5000)
+        {
+            bZeroCalibration = false;
+            gyroDrift = cg.getDriftMeasure();
+            cg.setGyroCalibration(gyroDrift);
+            QMessageBox::information(
+                this,
+                QString::fromUtf8("Калибровка гироскопа"),
+                QString::fromUtf8("Калибровка нуля завершена"));
+        }
+
+    }
 
     QPoint vel = QPoint(0, 0);
 
@@ -171,6 +205,7 @@ void MainWindow::onPokeTimer()
         sent += packsize*sizeof(int);
 
     }
+
 }
 //------------------------------------------------------------------------------
 void MainWindow::onSpeedTimer()
@@ -409,4 +444,31 @@ void MainWindow::on_refreshPorts_button_clicked()
         ui->com_combo->addItem(QString("/dev/") + files[a]);
     }
     #endif
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_resetRotation_button_clicked()
+{
+    cg.resetRotation();
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_calibrateZero_action_triggered()
+{
+    QMessageBox::information(
+        this,
+        QString::fromUtf8("Калибровка гироскопа"),
+        QString::fromUtf8("Держите устройство неподвижно в течение нескольких секунд.")
+        );
+    cg.startDriftMeasure();
+    calibTime.start();
+    bZeroCalibration = true;
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_calibrateAngle_action_triggered()
+{
+    QMessageBox::information(
+        this,
+        QString::fromUtf8("Калибровка гироскопа"),
+        QString::fromUtf8("Поверните устройство на 90 градусов"));
+    bCoeffCalibration = true;
+    calibTime.restart();
 }

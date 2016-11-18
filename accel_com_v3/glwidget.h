@@ -17,7 +17,7 @@ public:
     void resizeGL(int w, int h);
     void paintGL();
 
-    void setPlateRotations(double pitch, double roll);
+    void setPlateRotations(double pitch = 0, double roll = 0, double yaw = 0);
 
     void setAccels(double x, double y, double z);
 
@@ -40,7 +40,7 @@ private:
     double cx, cy, cz;
 
     // Углы поворота платы
-    double pp, pr;
+    double pp, pr, py;
 
     // Вектор ускорения
     double ax, ay, az;

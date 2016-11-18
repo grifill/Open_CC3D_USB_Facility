@@ -104,15 +104,20 @@ void GLWidget::paintGL()
 //        glVertex2f(10, -10);
 //    glEnd();
 
+    // Вектор ускорения
+    float al = 0.08*sqrt(ax*ax + ay*ay + az*az);
     glColor3f(1, 1, 1);
+    glLineWidth(3);
     glBegin(GL_LINES);
         glVertex3f(0, 0, 0);
-        glVertex3f(ax, ay, az);
+        glVertex3f(ax/al, ay/al, az/al);
     glEnd();
+    glLineWidth(0);
 
     glEnable(GL_LIGHTING);
 
     // Поворот платы
+    glRotatef(py, 0, 0, 1);
     glRotatef(pp, 0, 1, 0);
     glRotatef(pr, -1, 0, 0);
     // Плата
@@ -202,10 +207,11 @@ void GLWidget::drawCube()
     glEnd();
 }
 
-void GLWidget::setPlateRotations(double pitch, double roll)
+void GLWidget::setPlateRotations(double pitch, double roll, double yaw)
 {
     pp = pitch;
     pr = roll;
+    py = yaw;
 }
 
 void GLWidget::setAccels(double x, double y, double z)

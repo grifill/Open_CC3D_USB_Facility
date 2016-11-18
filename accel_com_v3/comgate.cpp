@@ -1,6 +1,6 @@
 #include "comgate.h"
 
-#define VERBOSE 0
+#define VERBOSE 1
 
 #ifndef WIN32
 #include <termios.h>
@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <math.h>
 /*  -----------------------------------------------------------------------  */
 /*  convert integer speed to posix serial speed flags */
 static int serial_speed(int speed /*  [bit/sec]  */)
@@ -81,6 +82,7 @@ static int serial_speed(int speed /*  [bit/sec]  */)
     return 0;
 }
 #endif
+//------------------------------------------------------------------------------
 
 ComGate::ComGate(QObject* parent)
     : QObject(parent)
@@ -90,9 +92,16 @@ ComGate::ComGate(QObject* parent)
     memset(&accdata, 0, sizeof(accdata));
     rxptr = 0;
     speed = 0;
+    resetRotation();
 
     rcv = 0;
     lastRcv = 0;
+
+    gyroCoeff = 1.56913e-05;
+    gyroDrift.rx = -74;
+    gyroDrift.ry = 48;
+    gyroDrift.rz = -48;
+    bDriftCalibration = false;
 }
 //------------------------------------------------------------------------------
 ComGate::~ComGate()
@@ -281,6 +290,8 @@ int ComGate::connectToDevice(const char *device, int speed, int stopbits, CG_PAR
     memset(&accdata, 0, sizeof(accdata));
     rxptr = 0;
     measure.start();
+    gyroTime.start();
+    resetRotation();
 
     sprintf(err_str, "Connected to device");
     return CG_OK;
@@ -322,20 +333,20 @@ char* ComGate::hexdump(const char *ar, int arsize)
 //------------------------------------------------------------------------------
 int ComGate::readPendingData()
 {
-#if VERBOSE > 1
+#if VERBOSE > 2
     char log[ERR_SIZE];
 #endif
 
     if(rxptr >= RXBUF_SIZE)
     {
         rxptr = 0;  // Буфер накопленных данных сбрасывается, если за 1024
-                    // байта не набралось ни одного пакета
+                    // байта не набралось ни одного пакета        
     }
 
 
 //    while(1)
 //    {
-        char* arp = &(rxbuf[0]);
+        char* arp = &(rxbuf[rxptr]);
         // Чтение накопившихся данных
         #ifdef WIN32
         int readsize = RXBUF_SIZE-rxptr;
@@ -364,12 +375,15 @@ int ComGate::readPendingData()
         rcv += res;
         rxptr += res;
 
-        // Разбираем то что прочитали
-        parseData();
-#if VERBOSE > 1
-        snprintf(log, ERR_SIZE, "Dump received: <- %s", hexdump(arp, res));
+#if VERBOSE > 2
+        snprintf(log, ERR_SIZE, "Dump received, buf: <- %s (%d bytes)",
+                 hexdump(rxbuf, rxptr),
+                 rxptr);
         emit newDump(QString(log));
 #endif
+
+        // Разбираем то что прочитали
+        parseData();
 //    }
     if(measure.elapsed() > 500)
     {
@@ -382,28 +396,75 @@ int ComGate::readPendingData()
 //------------------------------------------------------------------------------
 void ComGate::parseData()
 {
-#if VERBOSE > 0
+#if VERBOSE > 1
     char log[ERR_SIZE];
 #endif
-    for(int a=0; a<rxptr-4-(int)sizeof(accdata); a++)
+    for(int a=0; a<rxptr-(int)sizeof(accdata)+1; a++)
     {
         unsigned int* m = (unsigned int*)&(rxbuf[a]);
-        if(*m == 0xDEADBEEF)
+        if(*m == ACCPACK_HEADER)
         {
             // Нашли начало пакета
-#if VERBOSE > 0
+            // Проверим, что оно больше нигде не встречается до конца пакета
+            int b=a+1;
+            for(; b<a+(int)sizeof(accdata) && b<rxptr-(int)sizeof(accdata)+1; b++)
+            {
+                m = (unsigned int*)&(rxbuf[b]);
+                if(*m == ACCPACK_HEADER)
+                {
+                    b = -1;
+                    break;
+                }
+            }
+            if(b<0)
+                continue;   // Битый пакет
+
+            memcpy(&accdata, rxbuf+a, sizeof(accdata));
+#if VERBOSE > 1
             snprintf(log, ERR_SIZE,
-                     "Packet received: %s",
-                     hexdump(rxbuf+a, 4+sizeof(accdata)));
+                     "Packet received: %s, "
+                     "Raw values: %d, %d, %d | %d, %d, %d | %g",
+                     hexdump(rxbuf+a, sizeof(accdata)),
+                     accdata.ax,
+                     accdata.ay,
+                     accdata.az,
+                     accdata.gx,
+                     accdata.gy,
+                     accdata.gz,
+                     (float)accdata.temp/256);
             emit newDump(QString(log));
 #endif
-            memcpy(&accdata, rxbuf+a+4, sizeof(accdata));
-            memmove(rxbuf, rxbuf+a+4+sizeof(accdata), rxptr-a-4-sizeof(accdata));
-            rxptr -= a+4+sizeof(accdata);
+
+            memmove(rxbuf, rxbuf+a+sizeof(accdata), rxptr-a-sizeof(accdata));
+            rxptr -= a+sizeof(accdata);
             a = -1;
 
+#if VERBOSE > 2
+            snprintf(log, ERR_SIZE, "Parsed-out buf: <- %s (%d bytes), a=%d",
+                     hexdump(rxbuf, rxptr),
+                     rxptr,
+                     a);
+            emit newDump(QString(log));
+#endif
         }
     }
+
+    int dt = gyroTime.elapsed();
+    // Константы подогнаны
+    rotation.rx += gyroCoeff * (accdata.gx - gyroDrift.rx) * dt;
+    rotation.ry += gyroCoeff * (accdata.gy - gyroDrift.ry) * dt;
+    rotation.rz += gyroCoeff * (accdata.gz - gyroDrift.rz) * dt;
+
+    if(bDriftCalibration)
+    {
+        Rotation r;
+        r.rx = accdata.gx;
+        r.ry = accdata.gy;
+        r.rz = accdata.gz;
+        driftValues.append(r);
+    }
+
+    gyroTime.restart();
 }
 //------------------------------------------------------------------------------
 void ComGate::getData(AccPack* data)
@@ -411,4 +472,82 @@ void ComGate::getData(AccPack* data)
     if(data == 0)
         return;
     memcpy(data, &accdata, sizeof(accdata));
+}
+//------------------------------------------------------------------------------
+void ComGate::getRotation(Rotation *r)
+{
+    if(r==0)
+        return;
+    memcpy(r, &rotation, sizeof(rotation));
+}
+//------------------------------------------------------------------------------
+void ComGate::resetRotation()
+{
+    memset(&rotation, 0, sizeof(rotation));
+}
+//------------------------------------------------------------------------------
+void ComGate::setGyroCalibration(float k, Rotation drift)
+{
+    gyroCoeff = k;
+    gyroDrift = drift;
+
+    #if VERBOSE>0
+    char log[ERR_SIZE];
+    snprintf(log, ERR_SIZE, "Calibrated with k=%g, drift=(%g, %g, %g)",
+             k,
+             drift.rx,
+             drift.ry,
+             drift.rz);
+    emit newDump(QString(log));
+
+    #endif
+}
+//------------------------------------------------------------------------------
+void ComGate::setGyroCalibration(float k)
+{
+    setGyroCalibration(k, gyroDrift);
+}
+//------------------------------------------------------------------------------
+void ComGate::setGyroCalibration(Rotation d)
+{
+    setGyroCalibration(gyroCoeff, d);
+}
+//------------------------------------------------------------------------------
+void ComGate::startDriftMeasure()
+{
+    driftValues.clear();
+    bDriftCalibration = true;
+}
+//------------------------------------------------------------------------------
+Rotation ComGate::getDriftMeasure()
+{
+    bDriftCalibration = false;
+    Rotation r;
+    memset(&r, 0, sizeof(r));
+    for(int a=0; a<driftValues.size(); a++)
+    {
+        r.rx += driftValues[a].rx;
+        r.ry += driftValues[a].ry;
+        r.rz += driftValues[a].rz;
+    }
+    r.rx /= driftValues.size();
+    r.ry /= driftValues.size();
+    r.rz /= driftValues.size();
+    driftValues.clear();
+    return r;
+}
+//------------------------------------------------------------------------------
+void ComGate::startAngleMeasure()
+{
+    bAngleCalibration = true;
+    startAngle = rotation.rz;
+}
+//------------------------------------------------------------------------------
+float ComGate::getAngleMeasure()
+{
+    bAngleCalibration = false;
+    float r = fabs(rotation.rz - startAngle);
+    if(r == 0)
+        return 0;
+    return 90.0/r*(gyroCoeff);
 }

@@ -20,6 +20,7 @@ enum CG_PARITY
 #include <QString>
 #include <QTimer>
 #include <QTime>
+#include <QList>
 #include <stdint.h>
 
 #define ERR_SIZE    1024        // Размер строки с описанием ошибки
@@ -33,11 +34,14 @@ enum CG_PARITY
 #define GC_OVERRUN  -5      // Переполнение буфера чтения
 
 
+#pragma pack (push,1)
+
 // Пакет с данными устройства.
-// Перед пакетом идет маркер, 4 байта, содержащий константу 0xDEADBEEF
 // в LittleEndian
+#define ACCPACK_HEADER 0xDEADBEEF
 struct AccPack
 {
+    uint32_t header;    // Маркер пакета
     int16_t ax;     // Координаты вектора ускорения
     int16_t ay;
     int16_t az;
@@ -45,6 +49,16 @@ struct AccPack
     int16_t gy;
     int16_t gz;
     int16_t temp;   // Температура
+};
+#pragma pack (pop)
+
+// Структура с информацией о углах поворота (интеграл от показаний гироскопа)
+// в градусах
+struct Rotation
+{
+    float rx;
+    float ry;
+    float rz;
 };
 
 class ComGate: public QObject
@@ -79,8 +93,32 @@ public:
     // Возвращает строковое описание ошибки диспенсера (ASCII)
     char* err_desc(UCHAR err_code);
 
-    // Записывает ускорения в переданный массив ar
+    // Записывает ускорения в переданную структуру data
     void getData(AccPack* data);
+
+    // Записывает вращение в переденную структуру
+    void getRotation(Rotation* r);
+
+    // Сбрасывает накопленные углы поворота
+    void resetRotation();
+
+    // Заносит константы калибровки гироскопа
+    void setGyroCalibration(float k, Rotation d);
+    void setGyroCalibration(float k);
+    void setGyroCalibration(Rotation d);
+
+    // Запуск измерения нуля гироскопа
+    void startDriftMeasure();
+
+    // Остановка измерения нуля и получение усредненных результатов
+    Rotation getDriftMeasure();
+
+    // Запуск измерения к-та поворота гироскопа
+    void startAngleMeasure();
+
+    // Возвращает коэффициент поворота гироскопа, считая, что устройство
+    // повернули на 90 градусов вокруг вертикальной оси
+    float getAngleMeasure();
 
     // Чтение данных в последовательном порту с минимальным таймаутом
     int readPendingData();
@@ -98,10 +136,21 @@ private:
     char rxbuf[RXBUF_SIZE];     // Прочитанные байты
     int rxptr;                  // Сколько байт прочитано в rxbuf
     AccPack accdata;            // Последние прочитанные данные устройства
+    QTime gyroTime;             // Время последнего снятия показаний гироскопа
+    Rotation rotation;          // Углы поворота, проинтегрированные из
+                                // показаний гироскопа
+    float gyroCoeff;            // Коэффициент перед интегралом скорости
+    Rotation gyroDrift;         // Уход нуля гироскопа
 
     int rcv, lastRcv;           // Для подсчета скорости
     double speed;               // Скорость, байт/с
     QTime measure;              // Время последнего замера скорости
+
+    bool bDriftCalibration;     // Проводится ли калибровка нуля
+    QList<Rotation> driftValues;// Массив для измерения дрейфа гироскопа
+
+    bool bAngleCalibration;     // Проводится ли калибровка к-та расчета угла
+    float startAngle;           // Начальный угол
 
     // Возвращает строку, соответствующую хексдампу переданного массива
     char* hexdump(const char *ar, int arsize);
