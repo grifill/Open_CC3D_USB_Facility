@@ -106,7 +106,7 @@ void GLWidget::paintGL()
 
     // Вектор ускорения
     float al = 0.08*sqrt(ax*ax + ay*ay + az*az);
-    glColor3f(1, 1, 1);
+    glColor3f(1, 0, 1);
     glLineWidth(3);
     glBegin(GL_LINES);
         glVertex3f(0, 0, 0);

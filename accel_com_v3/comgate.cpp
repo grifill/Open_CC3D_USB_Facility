@@ -2,13 +2,13 @@
 
 #define VERBOSE 1
 
+#include <math.h>
 #ifndef WIN32
 #include <termios.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <math.h>
 /*  -----------------------------------------------------------------------  */
 /*  convert integer speed to posix serial speed flags */
 static int serial_speed(int speed /*  [bit/sec]  */)
@@ -109,7 +109,11 @@ ComGate::~ComGate()
     disconnectFromDevice();
 }
 //------------------------------------------------------------------------------
+#ifdef WIN32
+int ComGate::connectToDevice(const char *device, int speed, int stopbits, int parity)
+#else
 int ComGate::connectToDevice(const char *device, int speed, int stopbits, CG_PARITY parity)
+#endif
 {
     #ifdef WIN32
     // Преобразование в вендостроку
