@@ -188,9 +188,9 @@ int ComGate::connectToDevice(const char *device, int speed, int stopbits, int pa
     }
 
     COMMTIMEOUTS CommTimeOuts;
-    CommTimeOuts.ReadIntervalTimeout = 1;
+    CommTimeOuts.ReadIntervalTimeout = 0;
     CommTimeOuts.ReadTotalTimeoutMultiplier = 0;
-    CommTimeOuts.ReadTotalTimeoutConstant = 0;
+    CommTimeOuts.ReadTotalTimeoutConstant = 20;
     CommTimeOuts.WriteTotalTimeoutMultiplier = 0;
     CommTimeOuts.WriteTotalTimeoutConstant = 200;
 
@@ -364,17 +364,17 @@ int ComGate::readPendingData()
 //------------------------------------------------------------------------------
 void ComGate::parseData()
 {
-//    char log[ERR_SIZE];
+    char log[ERR_SIZE];
     for(int a=0; a<rxptr-4-(int)sizeof(accdata); a++)
     {
         unsigned int* m = (unsigned int*)&(rxbuf[a]);
         if(*m == 0xDEADBEEF)
         {
             // Нашли начало пакета
-//            snprintf(log, ERR_SIZE,
-//                     "Package received: %s",
-//                     hexdump(rxbuf+a, 4+sizeof(accdata)));
-//            emit newDump(QString(log));
+            snprintf(log, ERR_SIZE,
+                     "Package received: %s",
+                     hexdump(rxbuf+a, 4+sizeof(accdata)));
+            emit newDump(QString(log));
             memcpy(&accdata, rxbuf+a+4, sizeof(accdata));
             memmove(rxbuf, rxbuf+a+4+sizeof(accdata), rxptr-a-4-sizeof(accdata));
             rxptr -= a+4+sizeof(accdata);
@@ -383,7 +383,7 @@ void ComGate::parseData()
         }
     }
     // Конвертация данных
-    accdata.temp = accdata.temp/340 + 36;
+    //accdata.temp = accdata.temp/340 + 36;
 }
 //------------------------------------------------------------------------------
 void ComGate::getData(AccPack* data)

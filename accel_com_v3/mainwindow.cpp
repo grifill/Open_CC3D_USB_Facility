@@ -16,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent) :
     about.setAppName("РК 2.2 | ДГИ");
     measure.start();
 
-    pokeTimer.start(50);
+    pokeTimer.start(5);
     connect(&pokeTimer, SIGNAL(timeout()), SLOT(onPokeTimer()));
 
     speedTimer.start(500);
@@ -177,7 +177,7 @@ void MainWindow::onPokeTimer()
 
     QPoint vel = QPoint(0, 0);
 
-    if( abs(data.ax)>10 || abs(data.ay)>10 )
+    if( abs(data.ax)>100 || abs(data.ay)>100 )
     {
         if(abs(data.ax) > abs(data.ay))
         {
