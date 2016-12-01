@@ -19,6 +19,8 @@ public:
 
     void setPlateRotations(double pitch = 0, double roll = 0, double yaw = 0);
 
+    void setRotationMatrix(GLdouble* m);
+
     void setAccels(double x, double y, double z);
 
 protected:
@@ -41,6 +43,10 @@ private:
 
     // Углы поворота платы
     double pp, pr, py;
+
+    // Матрица поворота платы
+    GLdouble rotMatrix[16];
+    bool bMatrixRotation;
 
     // Вектор ускорения
     double ax, ay, az;

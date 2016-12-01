@@ -59,6 +59,12 @@ void MainWindow::onPokeTimer()
 
     AccPack data;
     memset(&data, 0, sizeof(data));
+    double rotMatrix[16];
+    memset(&rotMatrix, 0, 16*sizeof(double));
+    rotMatrix[0] = 1;
+    rotMatrix[5] = 1;
+    rotMatrix[10] = 1;
+    rotMatrix[15] = 1;
     if(cg.isConnected())
     {
         cg.readPendingData();
@@ -66,6 +72,7 @@ void MainWindow::onPokeTimer()
                                     + QString::fromUtf8(" Б/с"));
         cg.getData(&data, &dataTime);
         cg.getRotation(&rot);
+        cg.getRotation(&(rotMatrix[0]));
 
         ui->x_sb->setValue(data.ax);
         ui->y_sb->setValue(data.ay);
@@ -74,6 +81,7 @@ void MainWindow::onPokeTimer()
         ui->gy_sb->setValue(data.gy);
         ui->gz_sb->setValue(data.gz);
         ui->T_sb->setValue((float)data.temp/256);
+        ui->widget->setRotationMatrix(rotMatrix);
     }
     else
     {
@@ -90,6 +98,8 @@ void MainWindow::onPokeTimer()
         rot.ry += 1.5e-05 * data.gy * tdiff;
         rot.rz += 1.5e-05 * data.gz * tdiff;
         dataTime = tick.elapsed();
+
+        ui->widget->setPlateRotations(-rot.ry, rot.rx, rot.rz);
     }
 
 //    qDebug() << "Timer tick: " << t1.elapsed();
@@ -141,7 +151,6 @@ void MainWindow::onPokeTimer()
     ui->gYaw_sb->setValue(rot.rz);
 
     //ui->widget->setPlateRotations(pitch, roll);
-    ui->widget->setPlateRotations(-rot.ry, rot.rx, rot.rz);
 
     // Проверяем состояние калибровки
     if(bCoeffCalibration)

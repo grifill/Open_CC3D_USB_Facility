@@ -15,6 +15,7 @@ GLWidget::GLWidget(QWidget *parent) :
     cz = 20;
     cp = 30;
     cr = -60;
+    bMatrixRotation = false;
 
     connect(&updateTimer, SIGNAL(timeout()), SLOT(updateGL()));
     updateTimer.start(20);
@@ -117,9 +118,16 @@ void GLWidget::paintGL()
     glEnable(GL_LIGHTING);
 
     // Поворот платы
-    glRotatef(py, 0, 0, 1);
-    glRotatef(pp, 0, 1, 0);
-    glRotatef(pr, -1, 0, 0);
+    if(bMatrixRotation)
+    {
+        glLoadMatrixd(rotMatrix);
+    }
+    else
+    {
+        glRotatef(py, 0, 0, 1);
+        glRotatef(pp, 0, 1, 0);
+        glRotatef(pr, -1, 0, 0);
+    }
     // Плата
     drawPlate();
 }
@@ -212,6 +220,13 @@ void GLWidget::setPlateRotations(double pitch, double roll, double yaw)
     pp = pitch;
     pr = roll;
     py = yaw;
+    bMatrixRotation = false;
+}
+
+void GLWidget::setRotationMatrix(GLdouble *m)
+{
+    memcpy(&rotMatrix, m, 16*sizeof(GLdouble));
+    bMatrixRotation = true;
 }
 
 void GLWidget::setAccels(double x, double y, double z)

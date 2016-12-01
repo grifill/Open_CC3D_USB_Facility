@@ -102,6 +102,8 @@ ComGate::ComGate(QObject* parent)
     gyroDrift.ry = 48;
     gyroDrift.rz = -48;
     bDriftCalibration = false;
+
+    resetRotation();
 }
 //------------------------------------------------------------------------------
 ComGate::~ComGate()
@@ -470,6 +472,9 @@ void ComGate::parseData()
 
     int dt = gyroTime.elapsed() - lastGyroTime;
     // Константы подогнаны
+    rotateMatrix(gyroCoeff * (accdata.gx) * dt, -1, 0, 0);
+    rotateMatrix(gyroCoeff * (accdata.gy) * dt, 0, -1, 0);
+    rotateMatrix(gyroCoeff * (accdata.gz) * dt, 0, 0, 1);
     rotation.rx += gyroCoeff * (accdata.gx) * dt;
     rotation.ry += gyroCoeff * (accdata.gy) * dt;
     rotation.rz += gyroCoeff * (accdata.gz) * dt;
@@ -492,9 +497,21 @@ void ComGate::getRotation(Rotation *r)
     memcpy(r, &rotation, sizeof(rotation));
 }
 //------------------------------------------------------------------------------
+void ComGate::getRotation(double *r)
+{
+    if(r==0)
+        return;
+    memcpy(r, &rotMatrix, 16*sizeof(double));
+}
+//------------------------------------------------------------------------------
 void ComGate::resetRotation()
 {
     memset(&rotation, 0, sizeof(rotation));
+    memset(&rotMatrix, 0, 16*sizeof(double));
+    rotMatrix[0] = 1;
+    rotMatrix[5] = 1;
+    rotMatrix[10] = 1;
+    rotMatrix[15] = 1;
 }
 //------------------------------------------------------------------------------
 void ComGate::setGyroCalibration(float k, Rotation drift)
@@ -561,4 +578,47 @@ float ComGate::getAngleMeasure()
     if(r == 0)
         return 0;
     return 90.0/r*(gyroCoeff);
+}
+//------------------------------------------------------------------------------
+void ComGate::rotateMatrix(double a, double x, double y, double z)
+{
+    double r[16];
+    double c = cos(a*M_PI/180.0);
+    double s = sin(a*M_PI/180.0);
+    // Заполняем по столбцам матрицу поворота
+    r[0] = x*x*(1-c) + c;
+    r[1] = y*x*(1-c) + z*s;
+    r[2] = x*z*(1-c) - y*s;
+    r[3] = 0;
+
+    r[4] = x*y*(1-c) - z*s;
+    r[5] = y*y*(1-c) + c;
+    r[6] = y*z*(1-c) + x*s;
+    r[7] = 0;
+
+    r[8] = x*z*(1-c) + y*s;
+    r[9] = y*z*(1-c) - x*s;
+    r[10] = z*z*(1-c) + c;
+    r[11] = 0;
+
+    r[12] = 0;
+    r[13] = 0;
+    r[14] = 0;
+    r[15] = 1;
+
+    double res[16];
+    memset(&res, 0, 16*sizeof(double));
+    // Умножение матриц
+    for(int a=0; a<4; a++)
+    {
+        for(int b=0; b<4; b++)
+        {
+            for(int c=0; c<4; c++)
+            {
+                res[a+b*4] += rotMatrix[a+c*4] * r[b*4+c];
+            }
+        }
+    }
+
+    memcpy(rotMatrix, res, 16*sizeof(double));
 }

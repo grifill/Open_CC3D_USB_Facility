@@ -100,6 +100,9 @@ public:
     // Записывает вращение в переденную структуру
     void getRotation(Rotation* r);
 
+    // Записывает матрицу поворота
+    void getRotation(double* r);
+
     // Сбрасывает накопленные углы поворота
     void resetRotation();
 
@@ -141,6 +144,7 @@ private:
     int lastGyroTime;           // Время последнего снятия показаний гироскопа
     Rotation rotation;          // Углы поворота, проинтегрированные из
                                 // показаний гироскопа
+    double rotMatrix[16];       // Матрица вращения
     float gyroCoeff;            // Коэффициент перед интегралом скорости
     Rotation gyroDrift;         // Уход нуля гироскопа
 
@@ -160,6 +164,8 @@ private:
     // Разбирает данные в rxbuf, раскладывает все по переменным класса и
     // сдвигает массив.
     void parseData();
+
+    void rotateMatrix(double a, double x, double y, double z);
 
 signals:
     void newDump(QString dump);
