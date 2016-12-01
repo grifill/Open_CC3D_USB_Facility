@@ -139,6 +139,7 @@ int ComGate::connectToDevice(const char *device, int speed, int stopbits, CG_PAR
     {
         sprintf(err_str, "Error: CreateFileA() failed.  %ld",
                 GetLastError() );
+        fd = 0;
         return CG_GERR;
     }
 
@@ -213,6 +214,7 @@ int ComGate::connectToDevice(const char *device, int speed, int stopbits, CG_PAR
     {
         sprintf(err_str, "Error: SetCommTimeouts() failed.  %ld", GetLastError());
         CloseHandle(fd);
+        fd = 0;
         return CG_TOUT;
     }
     #else
@@ -295,6 +297,7 @@ int ComGate::connectToDevice(const char *device, int speed, int stopbits, CG_PAR
     rxptr = 0;
     measure.start();
     gyroTime.start();
+    lastGyroTime = gyroTime.elapsed();
     resetRotation();
 
     sprintf(err_str, "Connected to device");
@@ -453,12 +456,6 @@ void ComGate::parseData()
         }
     }
 
-    int dt = gyroTime.elapsed();
-    // Константы подогнаны
-    rotation.rx += gyroCoeff * (accdata.gx - gyroDrift.rx) * dt;
-    rotation.ry += gyroCoeff * (accdata.gy - gyroDrift.ry) * dt;
-    rotation.rz += gyroCoeff * (accdata.gz - gyroDrift.rz) * dt;
-
     if(bDriftCalibration)
     {
         Rotation r;
@@ -467,15 +464,25 @@ void ComGate::parseData()
         r.rz = accdata.gz;
         driftValues.append(r);
     }
+    accdata.gx -= gyroDrift.rx;
+    accdata.gy -= gyroDrift.ry;
+    accdata.gz -= gyroDrift.rz;
 
-    gyroTime.restart();
+    int dt = gyroTime.elapsed() - lastGyroTime;
+    // Константы подогнаны
+    rotation.rx += gyroCoeff * (accdata.gx) * dt;
+    rotation.ry += gyroCoeff * (accdata.gy) * dt;
+    rotation.rz += gyroCoeff * (accdata.gz) * dt;
+
+    lastGyroTime = gyroTime.elapsed();
 }
 //------------------------------------------------------------------------------
-void ComGate::getData(AccPack* data)
+void ComGate::getData(AccPack* data, int* t)
 {
-    if(data == 0)
-        return;
-    memcpy(data, &accdata, sizeof(accdata));
+    if(data)
+        memcpy(data, &accdata, sizeof(accdata));
+    if(t)
+        memcpy(t, &lastGyroTime, sizeof(int));
 }
 //------------------------------------------------------------------------------
 void ComGate::getRotation(Rotation *r)

@@ -16,13 +16,18 @@
  * int ID
  * int x
  * int y
- * После окончания точек высылается int z = -1
+ * После окончания точек высылается int z = -500
  * Принимаются следующие команды:
  * 0xFF 0x01 ID - добавление квадрата с заданным ID.
  * 0xFF 0x02 DIR - изменение направления движения квадрата, DIR - направление:
  *                 0 - стоп, 1 - вправо, 2 - вверх, 3 - влево, 4 - вниз.
 */
 
+struct PTClient
+{
+    QTcpSocket* sock;
+    int ID;
+};
 
 namespace Ui {
 class MainWindow;
@@ -43,21 +48,30 @@ private:
     Ui::MainWindow *ui;
     AboutForm about;
     ComGate cg;
+    Rotation rot;
     QTimer pokeTimer;
     QTimer speedTimer;
-    QTcpServer srv;
+    QTcpServer srv;                 // Сервер варианта 1 (ускорения)
     QList<QTcpSocket*> clients;
-    QTcpServer ptsrv;
-    QList<QTcpSocket*> ptclients;
+    QTcpServer ptsrv;               // Сервер варианта 2 (координаты)
+    QList<PTClient> ptclients;
+    QTcpServer gyroSrv;             // Сервер варианта 3 (гироскоп)
+    QList<QTcpSocket*> gyroClients;
 
+    // Измерение скорости
     int64_t sent;
     int64_t lastSent;
     QTime measure;
 
+    // Калибровка гироскопа
     QTime calibTime;
     bool bZeroCalibration;
     Rotation gyroDrift;
     bool bCoeffCalibration;
+
+    // Измерение времени при работе без устройства
+    QTime tick;
+    int dataTime;
 
     // Закрывает сервер и отключает всех клиентов
     void closeServer();
@@ -67,10 +81,11 @@ private slots:
     void onSpeedTimer();
     void onCgLog(QString l);
     void onNewConnection();
-    void onClientDisconnected();
-    void onClientDataReady();
+    void onClientDisconnected();    // Отключение общее для всех серверов
+    void onClientDataReady();       // Dummy-версия, просто читает все что есть
     void onNewPtConnection();
     void onPtDataReady();
+    void onNewGyroConnection();
 
     void on_com_button_clicked();
     void on_net_button_clicked();

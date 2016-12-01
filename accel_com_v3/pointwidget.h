@@ -23,7 +23,7 @@ public:
     ~PointWidget();
 
     // Добавить новую движущуюся точку
-    void addTail(int ID, QPoint start, QPoint vel = QPoint(0, 0));
+    bool addTail(int ID, QPoint start, QPoint vel = QPoint(0, 0));
     // Добавить новую точку, возвращает ID
     int addTail(QPoint start, QPoint vel = QPoint(0, 0));
     // Обновить координаты точки

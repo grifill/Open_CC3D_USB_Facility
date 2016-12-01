@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     bZeroCalibration = false;
+    bCoeffCalibration = false;
     ui->refreshPorts_button->setIcon(style()->standardIcon(QStyle::SP_BrowserReload));
     about.setAppName("РК 2.2 | ДГИ");
     measure.start();
@@ -27,12 +28,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(&srv, SIGNAL(newConnection()), SLOT(onNewConnection()));
     connect(&ptsrv, SIGNAL(newConnection()), SLOT(onNewPtConnection()));
+    connect(&gyroSrv, SIGNAL(newConnection()), SLOT(onNewGyroConnection()));
 
     on_refreshPorts_button_clicked();
 
     ui->widget->setAccels(ui->x_sb->value(), ui->y_sb->value(), ui->z_sb->value());
     ui->widget->setPlateRotations(ui->pitch_sb->value(), ui->roll_sb->value());
     ui->pointWidget->addTail(0, QPoint(0, 0), QPoint(0, 0));
+    tick.start();
+    memset(&rot, 0, sizeof(rot));
+    dataTime = 0;
 }
 //------------------------------------------------------------------------------
 MainWindow::~MainWindow()
@@ -53,15 +58,13 @@ void MainWindow::onPokeTimer()
     t1.start();
 
     AccPack data;
-    Rotation rot;
     memset(&data, 0, sizeof(data));
-    memset(&rot, 0, sizeof(rot));
     if(cg.isConnected())
     {
         cg.readPendingData();
         ui->comSpeed_label->setText(QString::number(cg.getSpeed())
                                     + QString::fromUtf8(" Б/с"));
-        cg.getData(&data);
+        cg.getData(&data, &dataTime);
         cg.getRotation(&rot);
 
         ui->x_sb->setValue(data.ax);
@@ -81,6 +84,12 @@ void MainWindow::onPokeTimer()
         data.gy = ui->gy_sb->value();
         data.gz = ui->gz_sb->value();
         data.temp = ui->T_sb->value();
+        // При отсутствии устройства надо посчитать углы поворота самостоятельно
+        int tdiff = tick.elapsed() - dataTime;
+        rot.rx += 1.5e-05 * data.gx * tdiff;
+        rot.ry += 1.5e-05 * data.gy * tdiff;
+        rot.rz += 1.5e-05 * data.gz * tdiff;
+        dataTime = tick.elapsed();
     }
 
 //    qDebug() << "Timer tick: " << t1.elapsed();
@@ -115,6 +124,22 @@ void MainWindow::onPokeTimer()
     ui->pitch_sb->setValue(pitch);
     ui->roll_sb->setValue(roll);
 
+    while(rot.rx > 180.0)
+        rot.rx -= 360.0;
+    while(rot.rx < -180.0)
+        rot.rx += 360.0;
+    while(rot.ry > 180.0)
+        rot.ry -= 360.0;
+    while(rot.ry < -180.0)
+        rot.ry += 360.0;
+    while(rot.rz > 180.0)
+        rot.rz -= 360.0;
+    while(rot.rz < -180.0)
+        rot.rz += 360.0;
+    ui->gPitch_sb->setValue(rot.rx);
+    ui->gRoll_sb->setValue(rot.ry);
+    ui->gYaw_sb->setValue(rot.rz);
+
     //ui->widget->setPlateRotations(pitch, roll);
     ui->widget->setPlateRotations(-rot.ry, rot.rx, rot.rz);
 
@@ -136,13 +161,13 @@ void MainWindow::onPokeTimer()
     {
         if(calibTime.elapsed() > 5000)
         {
-            bZeroCalibration = false;
             gyroDrift = cg.getDriftMeasure();
             cg.setGyroCalibration(gyroDrift);
             QMessageBox::information(
                 this,
                 QString::fromUtf8("Калибровка гироскопа"),
                 QString::fromUtf8("Калибровка нуля завершена"));
+            bZeroCalibration = false;
         }
 
     }
@@ -195,15 +220,35 @@ void MainWindow::onPokeTimer()
         pack[3*a+1] = pt.x();
         pack[3*a+2] = pt.y();
     }
-    pack[3*ids.size()] = -1;
+    pack[3*ids.size()] = -500;
 
     // Рассылаем клиентам второго сервера координаты
     for(int a=0; a<ptclients.size(); a++)
     {
-        QTcpSocket* s = ptclients[a];
+        QTcpSocket* s = ptclients[a].sock;
         s->write((char*)pack, packsize*sizeof(int));
         sent += packsize*sizeof(int);
 
+    }
+
+    // Рассылаем клиентам третьего сервера данные гироскопа и время
+    for(int a=0; a<gyroClients.size(); a++)
+    {
+        QTcpSocket* s = gyroClients[a];
+        struct
+        {
+            int time;
+            float gx;
+            float gy;
+            float gz;
+        }gyro;
+        gyro.time = dataTime;
+        gyro.gx = data.gx;
+        gyro.gy = data.gy;
+        gyro.gz = data.gz;
+
+        s->write((char*)&gyro, sizeof(gyro));
+        sent += sizeof(gyro);
     }
 
 }
@@ -263,6 +308,7 @@ void MainWindow::on_net_button_clicked()
         ui->log_edit->append(QString::fromUtf8("Сервер закрыт"));
         ui->port1_sb->setEnabled(true);
         ui->port2_sb->setEnabled(true);
+        ui->port3_sb->setEnabled(true);
     }
     else
     {
@@ -270,15 +316,23 @@ void MainWindow::on_net_button_clicked()
         {
             ui->log_edit->append(QString::fromUtf8("Сервер 1 открыт на порту ")
                              + QString::number(ui->port1_sb->value()));
+            ui->port1_sb->setEnabled(false);
+            ui->net_button->setText(QString::fromUtf8("Закрыть"));
         }
+
         if(ptsrv.listen(QHostAddress::Any, ui->port2_sb->value()))
         {
             ui->log_edit->append(QString::fromUtf8("Сервер 2 открыт на порту ")
                              + QString::number(ui->port2_sb->value()));
+            ui->port2_sb->setEnabled(false);
         }
-        ui->net_button->setText(QString::fromUtf8("Закрыть"));
-        ui->port1_sb->setEnabled(false);
-        ui->port2_sb->setEnabled(false);
+
+        if(gyroSrv.listen(QHostAddress::Any, ui->port3_sb->value()))
+        {
+            ui->log_edit->append(QString::fromUtf8("Сервер 3 открыт на порту ")
+                             + QString::number(ui->port3_sb->value()));
+            ui->port3_sb->setEnabled(false);
+        }
     }
 }
 //------------------------------------------------------------------------------
@@ -293,10 +347,17 @@ void MainWindow::closeServer()
 
     for(int a=0; a<ptclients.size(); a++)
     {
-        ptclients[a]->deleteLater();
+        ptclients[a].sock->deleteLater();
     }
     ptclients.clear();
     ptsrv.close();
+
+    for(int a=0; a<gyroClients.size(); a++)
+    {
+        gyroClients[a]->deleteLater();
+    }
+    gyroClients.clear();
+    gyroSrv.close();
 }
 //------------------------------------------------------------------------------
 void MainWindow::onNewConnection()
@@ -326,7 +387,25 @@ void MainWindow::onNewPtConnection()
     connect(s, SIGNAL(disconnected()), SLOT(onClientDisconnected()));
     connect(s, SIGNAL(readyRead()), SLOT(onPtDataReady()));
 
-    ptclients.append(s);
+    PTClient ptc;
+    ptc.sock = s;
+    ptc.ID = -1;
+    ptclients.append(ptc);
+}
+//------------------------------------------------------------------------------
+void MainWindow::onNewGyroConnection()
+{
+    QTcpSocket* s = gyroSrv.nextPendingConnection();
+    if(s == 0)
+        return;
+    ui->log_edit->append(QString::fromUtf8("Сервер 3: Подключен клиент: ")
+                         + s->peerAddress().toString() + ":"
+                         + QString::number(s->peerPort()));
+
+    connect(s, SIGNAL(disconnected()), SLOT(onClientDisconnected()));
+    connect(s, SIGNAL(readyRead()), SLOT(onClientDataReady()));
+
+    gyroClients.append(s);
 }
 //------------------------------------------------------------------------------
 void MainWindow::onClientDisconnected()
@@ -338,7 +417,16 @@ void MainWindow::onClientDisconnected()
         ss->disconnectFromHost();
 
         clients.removeAll(ss);
-        ptclients.removeAll(ss);
+        for(int a=0; a<ptclients.size(); a++)
+        {
+            if(ptclients[a].sock == ss)
+            {
+                ui->pointWidget->removeTail(ptclients[a].ID);
+                ptclients.removeAt(a);
+                break;
+            }
+        }
+        gyroClients.removeAll(ss);
 
         ss->deleteLater();
     }
@@ -368,9 +456,52 @@ void MainWindow::onPtDataReady()
         return;
 
     QTcpSocket *ss = (QTcpSocket*)s;
-    ss->readAll();
+    QByteArray bytes = ss->readAll();
 
-    // Просто игнорируем все, что пришло
+    for(int a=0; a<ptclients.size(); a++)
+    {
+        PTClient& ptc = ptclients[a];
+        if(ptc.sock == ss)
+        {
+            if((unsigned char)bytes.at(0) != (unsigned char)0xFF)
+                continue;
+
+            if(bytes.at(1) == 0x01)
+            {
+                int ID = bytes[2];
+                if( ui->pointWidget->addTail(ID, QPoint(0,0)) )
+                {
+                    if(ptc.ID != -1)
+                        ui->pointWidget->removeTail(ptc.ID);
+                    ptc.ID = ID;
+                }
+            }
+
+            if(bytes.at(1) == 0x02)
+            {
+                int dir = bytes[2];
+                int ID = ptc.ID;
+                switch(dir)
+                {
+                    case 1:
+                        ui->pointWidget->updateVelocity(ID, QPoint(1,0));
+                        break;
+                    case 2:
+                        ui->pointWidget->updateVelocity(ID, QPoint(0,1));
+                        break;
+                    case 3:
+                        ui->pointWidget->updateVelocity(ID, QPoint(-1,0));
+                        break;
+                    case 4:
+                        ui->pointWidget->updateVelocity(ID, QPoint(0,-1));
+                        break;
+                    case 0:
+                    default:
+                        ui->pointWidget->updateVelocity(ID, QPoint(0,0));
+                }
+            }
+        }
+    }
 }
 //------------------------------------------------------------------------------
 void MainWindow::on_about_action_triggered()
@@ -449,6 +580,7 @@ void MainWindow::on_refreshPorts_button_clicked()
 void MainWindow::on_resetRotation_button_clicked()
 {
     cg.resetRotation();
+    memset(&rot, 0, sizeof(rot));
 }
 //------------------------------------------------------------------------------
 void MainWindow::on_calibrateZero_action_triggered()

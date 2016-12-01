@@ -38,7 +38,7 @@
  * @{
  */
 #define M_PI  3.14159265358979323846
-//#define FLOAT_CONVERTION_USE
+#define FLOAT_CONVERTION_USE
 
 
 /* Private typedef -----------------------------------------------------------*/
@@ -172,13 +172,13 @@ void TIM2_IRQHandler ()
 		buf_tx[2]=0xAD;
 		buf_tx[3]=0xDE;
 		MPU6000_GetAccAxesRaw(&data_mpu_acc);
-		memmove(buf_tx+4,&data_mpu_acc.AXIS_AX,2);
-		memmove(buf_tx+6,&data_mpu_acc.AXIS_AY,2);
-		memmove(buf_tx+8,&data_mpu_acc.AXIS_AZ,2);
+		memcpy(buf_tx+4,&data_mpu_acc.AXIS_AX,2);
+		memcpy(buf_tx+6,&data_mpu_acc.AXIS_AY,2);
+		memcpy(buf_tx+8,&data_mpu_acc.AXIS_AZ,2);
 		MPU6000_GetGyroAxesRaw(&data_mpu_gyro);
-		memmove(buf_tx+10,&data_mpu_gyro.AXIS_GX,2);
-		memmove(buf_tx+12,&data_mpu_gyro.AXIS_GY,2);
-		memmove(buf_tx+14,&data_mpu_gyro.AXIS_GZ,2);
+		memcpy(buf_tx+10,&data_mpu_gyro.AXIS_GX,2);
+		memcpy(buf_tx+12,&data_mpu_gyro.AXIS_GY,2);
+		memcpy(buf_tx+14,&data_mpu_gyro.AXIS_GZ,2);
 		switch (delay_irq/20)
 		{
 		case 0:
@@ -191,12 +191,12 @@ void TIM2_IRQHandler ()
 			float temp_conv;
 			temp_conv=((float)(data_mpu_temp.Temp_MPU)/340.0)+36.0;
 			temp_buf[1]=(int)temp_conv;
-			temp_buf[0]=(int)((temp_conv-temp_buf[0])*1000);
-			memmove(buf_tx+16,&temp_buf,2);
+			temp_buf[0]=(int)((temp_conv-temp_buf[1])*256);
+			memcpy(buf_tx+16,&temp_buf,2);
 #else
 			int16_t temp;
 			temp=(data_mpu_temp.Temp_MPU/340)+36;
-			memmove(buf_tx+16,&temp,2);
+			memcpy(buf_tx+16,&temp,2);
 #endif
 			delay_irq=0;
 			break;

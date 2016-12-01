@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>941</width>
-    <height>560</height>
+    <width>953</width>
+    <height>571</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,34 +29,6 @@
          <string>Подключение</string>
         </property>
         <layout class="QGridLayout" name="gridLayout_2">
-         <item row="0" column="2" colspan="2">
-          <widget class="QComboBox" name="com_combo">
-           <property name="editable">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>Последовательный порт</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="4">
-          <widget class="QPushButton" name="com_button">
-           <property name="text">
-            <string>Подключить</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="4">
-          <widget class="QPushButton" name="net_button">
-           <property name="text">
-            <string>Открыть</string>
-           </property>
-          </widget>
-         </item>
          <item row="2" column="3">
           <widget class="QSpinBox" name="port2_sb">
            <property name="maximum">
@@ -67,13 +39,41 @@
            </property>
           </widget>
          </item>
-         <item row="3" column="0" colspan="5">
+         <item row="2" column="5">
+          <widget class="QPushButton" name="net_button">
+           <property name="text">
+            <string>Открыть</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="5">
+          <widget class="QPushButton" name="com_button">
+           <property name="text">
+            <string>Подключить</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Последовательный порт</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0" colspan="6">
           <widget class="QTextEdit" name="log_edit"/>
          </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_2">
+         <item row="1" column="0" colspan="2">
+          <widget class="QLabel" name="label_3">
            <property name="text">
-            <string>Порты TCP/IP</string>
+            <string>Поток данных:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QToolButton" name="refreshPorts_button">
+           <property name="text">
+            <string>...</string>
            </property>
           </widget>
          </item>
@@ -87,31 +87,37 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
-          <widget class="QToolButton" name="refreshPorts_button">
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>...</string>
+            <string>Порты TCP/IP</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="0" colspan="2">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Поток данных:</string>
+         <item row="2" column="4">
+          <widget class="QSpinBox" name="port3_sb">
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>65535</number>
+           </property>
+           <property name="value">
+            <number>5602</number>
            </property>
           </widget>
          </item>
-         <item row="1" column="2" colspan="2">
+         <item row="0" column="2" colspan="3">
+          <widget class="QComboBox" name="com_combo">
+           <property name="editable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2" colspan="3">
           <widget class="QLabel" name="comSpeed_label">
            <property name="text">
             <string>0 Б/с</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="4">
-          <widget class="QPushButton" name="resetRotation_button">
-           <property name="text">
-            <string>Сброс вращения</string>
            </property>
           </widget>
          </item>
@@ -183,7 +189,7 @@
             <double>99999.000000000000000</double>
            </property>
            <property name="value">
-            <double>-60.000000000000000</double>
+            <double>60.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -289,12 +295,19 @@
           <number>3</number>
          </property>
          <item>
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Акселерометр</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QDoubleSpinBox" name="pitch_sb">
            <property name="prefix">
-            <string>pitch = </string>
+            <string>a_pitch = </string>
            </property>
            <property name="suffix">
-            <string> deg</string>
+            <string>°</string>
            </property>
            <property name="minimum">
             <double>-999.000000000000000</double>
@@ -307,10 +320,10 @@
          <item>
           <widget class="QDoubleSpinBox" name="roll_sb">
            <property name="prefix">
-            <string>roll = </string>
+            <string>a_roll = </string>
            </property>
            <property name="suffix">
-            <string> deg</string>
+            <string>°</string>
            </property>
            <property name="minimum">
             <double>-999.000000000000000</double>
@@ -343,6 +356,68 @@
            </property>
            <property name="maximum">
             <number>9999</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>Гироскоп</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="gPitch_sb">
+           <property name="prefix">
+            <string>g_pitch = </string>
+           </property>
+           <property name="suffix">
+            <string>°</string>
+           </property>
+           <property name="minimum">
+            <double>-999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>999.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="gRoll_sb">
+           <property name="prefix">
+            <string>g_roll = </string>
+           </property>
+           <property name="suffix">
+            <string>°</string>
+           </property>
+           <property name="minimum">
+            <double>-999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>999.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="gYaw_sb">
+           <property name="prefix">
+            <string>g_yaw = </string>
+           </property>
+           <property name="suffix">
+            <string>°</string>
+           </property>
+           <property name="minimum">
+            <double>-999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>999.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="resetRotation_button">
+           <property name="text">
+            <string>Сброс вращения</string>
            </property>
           </widget>
          </item>
@@ -411,8 +486,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>941</width>
-     <height>19</height>
+     <width>953</width>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">

@@ -79,7 +79,7 @@ void PointWidget::paintEvent(QPaintEvent *)
         if(ID==0)
             tail_color.setRgb(0, 0, 0);
         else
-            tail_color.setHsv((ID*36)%360, 100, 100);
+            tail_color.setHsv(ID*36, 255, 128);
         p.setPen(QPen(tail_color));
         p.setBrush(QBrush(tail_color));
         QPoint pt = t.pts.first();
@@ -102,15 +102,16 @@ void PointWidget::paintEvent(QPaintEvent *)
     }
 }
 //------------------------------------------------------------------------------
-void PointWidget::addTail(int ID, QPoint start, QPoint vel)
+bool PointWidget::addTail(int ID, QPoint start, QPoint vel)
 {
     if(tails.contains(ID))
-        return;
+        return false;
 
     Tail t;
     t.pts.append(start);
     t.vel = vel;
     tails[ID] = t;
+    return true;
 }
 //------------------------------------------------------------------------------
 int PointWidget::addTail(QPoint start, QPoint vel)
